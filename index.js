@@ -4,15 +4,17 @@ const { parse } = require('url')
 const dealias = require('aka-opts')
 const debug = require('debug')('ads-urls')
 
-const NAV_CONF = { waitUntil: 'load', timeout: 1000 }
+const AKA_CONF = { onlyHost: [ 'host' ], uniquify: [ 'uniq', 'unique' ] }
+const NAV_CONF = { waitUntil: 'networkidle0', timeout: 1000 }
 
 async function adsurls (keywords, opts) {
-  opts = dealias(opts || {}, { onlyHost: [ 'host', 'strip', 'clean' ] })
-  opts = Object.assign({ onlyHost: true }, opts)
+  opts = dealias(opts || {}, AKA_CONF)
+  opts = Object.assign({ onlyHost: false, uniquify: false }, opts)
 
   const browser = await launch()
   const urlMap = {}
 
+  // async iteratee
   async function scan (browser, keyword) {
     const page = await browser.newPage()
 
@@ -27,29 +29,21 @@ async function adsurls (keywords, opts) {
     await renav
     debug('url after 2nd nav::', await page.url())
 
-    // select all links with class "plantl pla-hc-c" ...
-    // either map hrefs to host domain address or leave link as it is ...
-    // uniquify ...
-    // store the set of urls in the closed over urlMap ...
-    const hrefs = await page.$$eval('.plantl.pla-hc-c', links => {
-      // return [ ...new Set(links.map(link => {
-      //   return opts.onlyHost ? parse(link.href).host : link.href
-      // })) ]
-      return links.map(link => link.href)
+    // mine links with classes "plantl pla-hc-c" ...
+    const hrefs = await page.$$eval('a.plantl.pla-hc-c', as => {
+      return as.map(a => a.href)
     })
-    
-    const adlinks = [ ...new Set(hrefs.map(href => {
-      return opts.onlyHost ? parse(href).host : href
-    })) ]
+    const mapds = hrefs.map(href => (opts.onlyHost ? parse(href).host : href))
+    const links = opts.uniquify ? [ ...new Set(mapds) ] : mapds
 
-
-    debug('mapped links::', adlinks)
-    urlMap[keyword] = adlinks
+    debug('mined links::', links)
+    urlMap[keyword] = links
 
     await page.close()
-    return adlinks
+    return links
   }
 
+  // async iteration promise
   return new Promise((resolve, reject) => {
     each(keywords, scan.bind(null, browser), async err => {
       await browser.close()
