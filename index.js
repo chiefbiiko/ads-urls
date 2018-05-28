@@ -31,6 +31,7 @@ async function adsurls (keywords, opts) {
     })
     debug('mapped links::', urlMap[keyword])
     await page.close()
+    return null
   }
   return new Promise((resolve, reject) => {
     each(keywords, scan.bind(null, browser), async err => {
