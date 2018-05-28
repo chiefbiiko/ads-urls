@@ -25,6 +25,7 @@
   "dependencies": {
     "aka-opts": "0.0.3",
     "async": "^2.6.1",
+    "debug": "^3.1.0",
     "puppeteer": "^1.4.0"
   }
 }
