@@ -36,7 +36,6 @@ async function adsurls (keywords, opts) {
   return new Promise((resolve, reject) => {
     each(keywords, scan.bind(null, browser), async err => {
       await browser.close()
-      if (err) console.error(err)
       err ? reject(err) : resolve(urlMap)
     })
   })
