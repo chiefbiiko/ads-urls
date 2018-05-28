@@ -4,7 +4,7 @@ const { parse } = require('url')
 const dealias = require('aka-opts')
 const debug = require('debug')('ads-urls')
 
-const NAV_CONF = { waitUntil: 'networkidle0', timeout: 1000 }
+const NAV_CONF = { waitUntil: 'load', timeout: 1000 }
 
 async function adsurls (keywords, opts) {
   opts = dealias(opts || {}, { onlyHost: [ 'host', 'strip', 'clean' ] })
@@ -17,12 +17,12 @@ async function adsurls (keywords, opts) {
     const page = await browser.newPage()
 
     // go to google and enter the keyword ...
-    await page.goto('https://google.com', NAV_CONF)
+    await page.goto('https://google.com/'/*, NAV_CONF*/)
     debug('url after 1st nav::', await page.url())
     await page.type('#lst-ib', keyword)
 
     // wait for renavigation ...
-    const renav = page.waitForNavigation(NAV_CONF)
+    const renav = page.waitForNavigation(/*NAV_CONF*/)
     await page.keyboard.press('Enter')
     await renav
     debug('url after 2nd nav::', await page.url())
@@ -31,11 +31,17 @@ async function adsurls (keywords, opts) {
     // either map hrefs to host domain address or leave link as it is ...
     // uniquify ...
     // store the set of urls in the closed over urlMap ...
-    const adlinks = await page.$$eval('.plantl.pla-hc-c', links => {
-      return [ ...new Set(links.map(link => {
-        return opts.onlyHost ? parse(link.href).host : link.href
-      })) ]
+    const hrefs = await page.$$eval('.plantl.pla-hc-c', links => {
+      // return [ ...new Set(links.map(link => {
+      //   return opts.onlyHost ? parse(link.href).host : link.href
+      // })) ]
+      return links.map(link => link.href)
     })
+    
+    const adlinks = [ ...new Set(hrefs.map(href => {
+      return opts.onlyHost ? parse(href).host : href
+    })) ]
+
 
     debug('mapped links::', adlinks)
     urlMap[keyword] = adlinks
@@ -50,12 +56,6 @@ async function adsurls (keywords, opts) {
       err ? reject(err) : resolve(urlMap)
     })
   })
-  // return new Promise((resolve, reject) => {
-  //   Promise.all(keywords.map(keyword => scan.call(null, browser, keyword)))
-  //     .finally(_ => browser.close())
-  //     .then(_ => resolve(urlMap))
-  //     .catch(reject)
-  // })
 }
 
 module.exports = adsurls

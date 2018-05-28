@@ -1,3 +1,5 @@
 const adsurls = require('./index')
 
-adsurls([ 'instrument shop' ]).then(console.log).catch(console.error)
+adsurls([ 'air max 97 gold' ])
+  .then(console.log)
+  .catch(console.error)
